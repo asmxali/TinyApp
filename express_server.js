@@ -42,12 +42,13 @@ app.get("/u/:shortURL", (req, res) => {
   longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
+ 
 
 
 app.post("/urls", (req, res) => {
   let newShortLink = generateRandomString();
   urlDatabase[newShortLink] = req.body.asma;
-  console.log(urlDatabase);
+  //console.log(urlDatabase);
   res.redirect(`/urls/${newShortLink}`);
 
 });
@@ -58,6 +59,12 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect(`/urls`);
 
 });
+
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.updatedURL;
+  res.redirect(`/urls`);
+});
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
