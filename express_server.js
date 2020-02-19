@@ -16,41 +16,100 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
 function generateRandomString() {
   var text = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
    
-  for (var i = 0; i < 6; i++)
+  for (var i = 0; i < 3; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
    
   return text;
 };
 
-app.post('/login', function (req, res) {
-  // Set cookie to username
-  res.cookie('username', req.body.username);
-  res.redirect(`/urls`);
+function emailLookUp(email) {
+  for(let user in users){
+    if(email === users[user].email ) 
+    { 
+      return user;
+    }
+  }
+  return false;
+}
+
+app.get("/register", (req, res) => {
+  let templateVars = { user: users[req.cookies["user_id"]] };
+  res.render("registration", templateVars);
+});
+app.post("/register", (req, res) => {
+  let newUser = generateRandomString();
   
+  //if user enters empty string return error 400
+  if(!req.body.email && !req.body.password){
+    res.status(400).send("Invalid Registration Details")
+  } else if(emailLookUp(req.body.email)){
+    res.status(400).send("User Already Exists!");
+  } else { 
+    res.cookie("user_id", newUser)
+    users[newUser] = {id:newUser, email: req.body.email, password: req.body.password}
+    console.log(users);
+    res.redirect(`/urls`);
+  }
+});
+ 
+
+app.post('/login', function (req, res) {
+
+  let { email, password } = req.body;
+  let userFound = emailLookUp(email);
+
+  if(!userFound){
+    res.status(403).send("User Does Not Exist")
+  } else {
+    if(password === users[userFound].password){
+      res.cookie("user_id", userFound);
+      res.redirect(`/urls`);
+    } else{
+      res.status(403).send("Incorrect Password")
+    }
+  }
+})
+  
+app.get('/login', function (req, res) {
+  let templateVars = { user: users[req.cookies.user_id]}
+  res.render("login", templateVars);
+    
   })
 
   app.get('/logout', function (req, res) {
-    // Set cookie to username
-    res.clearCookie('username');
+    // Set cookie to user_id
+    res.clearCookie('user_id');
     res.redirect(`/urls`);
   })
 
 app.get("/urls", (req, res) => {
-  let templateVars = { username: req.cookies["username"], urls: urlDatabase };
+  let templateVars = { user: users[req.cookies.user_id], urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = {username: req.cookies.username}
+  let templateVars = {user: users[req.cookies.user_id]}
   res.render("urls_new",templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { username: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  let templateVars = { user: users[req.cookies.user_id], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   console.log(templateVars);
   res.render("urls_show", templateVars);
 });
